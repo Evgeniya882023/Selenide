@@ -1,34 +1,47 @@
 package ru.netology.web;
 
+import com.codeborne.selenide.Configuration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 
-class RegistrationTest {
-    @Test
-    void shouldRegisterByAccountNumberDOMModification() {
+public class RegistrationTest {
+    @BeforeEach //предварительная настройка
+    public void setUp() {
+        Configuration.headless = true;
         open("http://localhost:9999");
-        $$(".tab-item").find(exactText("По номеру счёта")).click();
-        $("[name='number']").setValue("4055 0100 0123 4613 8564");
-        $("[name='phone']").setValue("+792000000000");
-        $$("button").find(exactText("Продолжить")).click();
-        $(withText("Успешная авторизация")).shouldBe(visible, Duration.ofMillis(5000));
-        $(byText("Личный кабинет")).shouldBe(visible, Duration.ofMillis(5000));
+        $("[data-test-id='date'] input").sendKeys(Keys.CONTROL + "A");
+        $("[data-test-id='date'] input").sendKeys("DELETE");
+
     }
 
-    @Test
-    void shouldRegisterByAccountNumberVisibilityChange() {
-        open("http://localhost:9999");
-        $$(".tab-item").find(exactText("По номеру счёта")).click();
-        $$("[name='number']").last().setValue("4055 0100 0123 4613 8564");
-        $$("[name='phone']").last().setValue("+792000000000");
-        $$("button").find(exactText("Продолжить")).click();
-        $(withText("Успешная авторизация")).shouldBe(visible, Duration.ofSeconds(5));
-        $(byText("Личный кабинет")).shouldBe(visible, Duration.ofSeconds(5));
+    public String GenerateDate(long addDays) {
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        LocalDate newDay = today.plusDays(addDays);
+        return newDay.format(formatter);
+    }
+
+    @Test //успешное оформление заказа доставки карты
+    public void successfullFormTest() {
+        String planningDate = GenerateDate(4);
+        $("[data-test-id='city'] input").setValue("Брянск");
+        $("[data-test-id='date'] input").setValue(GenerateDate(4));
+        $("[data-test-id='name'] input").setValue("Петрова-Иванова Анфиса");
+        $("[data-test-id='phone'] input").setValue("+79012240154");
+        $("[data-test-id='agreement']").click();
+        $(".button").click();
+        $(".notification .notification__content").shouldBe(visible, Duration.ofSeconds(15)).shouldBe(exactText("Встреча успешно забронирована на " + planningDate));
+        $(withText("Успешно!")).shouldBe(visible);
     }
 }
 
